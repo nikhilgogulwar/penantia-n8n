@@ -1,0 +1,87 @@
+{
+  "name": "Penantia \u2014 Self-Heal Every 15min",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2",
+      "name": "Call Self-Heal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "url": "https://penantiaglobal-ai-backend.hf.space/self-heal/run",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{}"
+      }
+    },
+    {
+      "id": "3",
+      "name": "Notify Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        710,
+        300
+      ],
+      "parameters": {
+        "url": "https://api.telegram.org/bot8671396088:AAEbr2WcPKPHuyOwknC0O5XaeZjuY66xiAA/sendMessage",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{\"chat_id\": 148289049, \"text\": \"Self-Heal: {{ $json.status }} | {{ $json.error || \"no error\" }} | heal_id: {{ $json.heal_id }}\"}"
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Call Self-Heal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Self-Heal": {
+      "main": [
+        [
+          {
+            "node": "Notify Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}
