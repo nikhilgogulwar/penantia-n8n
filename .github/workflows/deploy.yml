@@ -13,93 +13,29 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Install git-lfs
-        run: git lfs install
-
-      - name: Get commit info
-        id: info
-        run: |
-          COMMIT_MSG=$(git log -1 --pretty=%s)
-          COMMIT_SHA=$(git log -1 --pretty=%h)
-          AUTHOR=$(git log -1 --pretty=%an)
-          AEST_TIME=$(TZ='Australia/Sydney' date '+%Y-%m-%d %H:%M AEST')
-          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
-          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
-          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
-          echo "aest_time=$AEST_TIME" >> $GITHUB_OUTPUT
-
-      - name: Update README card via HF API
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          # Update the Space card README directly via HF Hub API
-          # This bypasses the git push limitation for README.md
-          python3 - <<'EOF'
-import urllib.request, json, base64, os
-
-token = os.environ["HF_TOKEN"]
-readme = """---
-title: Penantia n8n
-emoji: \u2699\ufe0f
-colorFrom: orange
-colorTo: red
-sdk: docker
-pinned: false
-app_port: 7860
----
-
-# Penantia AI n8n
-
-Automation workflows for Penantia AI.
-Login: penantiaglobal@gmail.com / Penantia2026!
-
-Workflows: Self-Heal 15min + Daily 8am Summary
-"""
-
-payload = json.dumps({
-  "commitTitle": "fix: update space card",
-  "files": [{
-    "path": "README.md",
-    "content": base64.b64encode(readme.encode()).decode()
-  }]
-}).encode()
-
-req = urllib.request.Request(
-  "https://huggingface.co/api/spaces/penantiaglobal/penantia-n8n/commit/main",
-  data=payload,
-  headers={
-    "Authorization": f"Bearer {token}",
-    "Content-Type": "application/json"
-  },
-  method="POST"
-)
-try:
-  resp = urllib.request.urlopen(req, timeout=30)
-  print("README updated via HF API:", resp.read().decode()[:100])
-except urllib.error.HTTPError as e:
-  print(f"HF API error: {e.code} — {e.read().decode()[:200]}")
-EOF
-
-      - name: Push other files to HuggingFace Space
+      - name: Push to HuggingFace Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git config --global user.email "penantiaglobal@gmail.com"
           git config --global user.name "Penantia AI"
           git remote add hf https://penantiaglobal:$HF_TOKEN@huggingface.co/spaces/penantiaglobal/penantia-n8n || true
-          # Push everything except README (handled by HF API above)
-          git push hf main --force || echo "Push had issues but continuing"
+          git push hf main --force
 
       - name: Telegram notification
         if: always()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          COMMIT_SHA: ${{ github.event.head_commit.id }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
           STATUS: ${{ job.status }}
         run: |
           ICON="✅"
           if [ "$STATUS" != "success" ]; then ICON="❌"; fi
-          MSG="${ICON} Penantia n8n | ${{ steps.info.outputs.commit_sha }} | ${{ steps.info.outputs.commit_msg }} | ${{ steps.info.outputs.aest_time }}"
+          AEST=$(TZ='Australia/Sydney' date '+%H:%M AEST')
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+          MSG="${ICON} Penantia n8n deployed | ${SHORT_SHA} | ${COMMIT_MSG} | ${AEST}"
           curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${MSG}" \
