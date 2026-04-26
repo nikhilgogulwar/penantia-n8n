@@ -8,35 +8,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
 
-      - name: Push to HuggingFace Space
+      - name: Push to HuggingFace
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git config --global user.email "penantiaglobal@gmail.com"
-          git config --global user.name "Penantia AI"
-          git remote add hf https://penantiaglobal:$HF_TOKEN@huggingface.co/spaces/penantiaglobal/penantia-n8n || true
-          git push hf main --force
+          git config user.email "penantiaglobal@gmail.com"
+          git config user.name "Penantia AI"
+          git remote add hf https://penantiaglobal:${HF_TOKEN}@huggingface.co/spaces/penantiaglobal/penantia-n8n
+          git push hf HEAD:main --force
 
-      - name: Telegram notification
+      - name: Telegram
         if: always()
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          COMMIT_SHA: ${{ github.event.head_commit.id }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          BOT: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
           STATUS: ${{ job.status }}
         run: |
-          ICON="✅"
-          if [ "$STATUS" != "success" ]; then ICON="❌"; fi
-          AEST=$(TZ='Australia/Sydney' date '+%H:%M AEST')
-          SHORT_SHA="${COMMIT_SHA:0:7}"
-          MSG="${ICON} Penantia n8n deployed | ${SHORT_SHA} | ${COMMIT_MSG} | ${AEST}"
-          curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MSG}" \
-            --max-time 10 || true
+          MSG="${STATUS}: penantia-n8n deployed - $(git log -1 --pretty=%h) $(git log -1 --pretty=%s)"
+          curl -s "https://api.telegram.org/bot${BOT}/sendMessage" --data-urlencode "chat_id=${CHAT}" --data-urlencode "text=${MSG}" --max-time 10 || true
