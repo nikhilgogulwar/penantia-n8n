@@ -1,0 +1,114 @@
+{
+  "name": "Penantia \u2014 Daily 8am Summary",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 22 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2",
+      "name": "Get Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        480,
+        300
+      ],
+      "parameters": {
+        "url": "https://penantiaglobal-ai-backend.hf.space/health",
+        "method": "GET"
+      }
+    },
+    {
+      "id": "3",
+      "name": "Get Insights",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        480,
+        460
+      ],
+      "parameters": {
+        "url": "https://penantiaglobal-ai-backend.hf.space/self-heal/status",
+        "method": "GET"
+      }
+    },
+    {
+      "id": "4",
+      "name": "Send Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        710,
+        380
+      ],
+      "parameters": {
+        "url": "https://api.telegram.org/bot8671396088:AAEbr2WcPKPHuyOwknC0O5XaeZjuY66xiAA/sendMessage",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{\"chat_id\": 148289049, \"text\": \"Penantia AI Daily\\nVersion: {{ $('Get Health').item.json.version }}\\nHeals: {{ $('Get Insights').item.json.recent_heals.length }}\"}"
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Get Health",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Health": {
+      "main": [
+        [
+          {
+            "node": "Send Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Insights": {
+      "main": [
+        [
+          {
+            "node": "Send Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}
