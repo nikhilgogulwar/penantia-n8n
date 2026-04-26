@@ -1,0 +1,49 @@
+name: Penantia n8n — Deploy to HF Space
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          lfs: true
+
+      - name: Get commit info
+        id: info
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          COMMIT_SHA=$(git log -1 --pretty=%h)
+          AUTHOR=$(git log -1 --pretty=%an)
+          AEST_TIME=$(TZ='Australia/Sydney' date '+%Y-%m-%d %H:%M AEST')
+          echo "commit_msg=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "author=$AUTHOR" >> $GITHUB_OUTPUT
+          echo "aest_time=$AEST_TIME" >> $GITHUB_OUTPUT
+
+      - name: Push to HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global user.email "penantiaglobal@gmail.com"
+          git config --global user.name "Penantia AI"
+          git remote add hf https://penantiaglobal:$HF_TOKEN@huggingface.co/spaces/penantiaglobal/penantia-n8n || true
+          git push hf main --force
+
+      - name: Telegram notification
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode="Markdown" \
+            -d text="⚙️ *Penantia n8n Deployed*
+Commit: ${{ steps.info.outputs.commit_sha }} — ${{ steps.info.outputs.commit_msg }}
+Author: ${{ steps.info.outputs.author }}
+Time: ${{ steps.info.outputs.aest_time }}
+[View on GitHub](https://github.com/nikhilgogulwar/penantia-n8n/commit/${{ github.sha }})"
