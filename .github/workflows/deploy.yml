@@ -10,8 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           lfs: true
+
+      - name: Install git-lfs
+        run: git lfs install
 
       - name: Get commit info
         id: info
@@ -35,15 +38,16 @@ jobs:
           git push hf main --force
 
       - name: Telegram notification
+        if: always()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          STATUS: ${{ job.status }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d chat_id="${TELEGRAM_CHAT_ID}" \
-            -d parse_mode="Markdown" \
-            -d text="⚙️ *Penantia n8n Deployed*
-Commit: ${{ steps.info.outputs.commit_sha }} — ${{ steps.info.outputs.commit_msg }}
-Author: ${{ steps.info.outputs.author }}
-Time: ${{ steps.info.outputs.aest_time }}
-[View on GitHub](https://github.com/nikhilgogulwar/penantia-n8n/commit/${{ github.sha }})"
+          ICON="✅"
+          if [ "$STATUS" != "success" ]; then ICON="❌"; fi
+          MSG="${ICON} Penantia n8n | ${{ steps.info.outputs.commit_sha }} | ${{ steps.info.outputs.commit_msg }} | ${{ steps.info.outputs.aest_time }}"
+          curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" \
+            --max-time 10 || true
