@@ -12,16 +12,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          lfs: true
 
       - name: Push to HuggingFace
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          set -x
+          echo "Token length: ${#HF_TOKEN}"
           git config user.email "penantiaglobal@gmail.com"
           git config user.name "Penantia AI"
+          git remote remove hf 2>/dev/null || true
           git remote add hf https://penantiaglobal:${HF_TOKEN}@huggingface.co/spaces/penantiaglobal/penantia-n8n
-          git push hf HEAD:main --force
+          git remote -v
+          git log --oneline -3
+          git push hf HEAD:main --force 2>&1
+          echo "Push exit code: $?"
 
       - name: Telegram
         if: always()
@@ -30,5 +35,5 @@ jobs:
           CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
           STATUS: ${{ job.status }}
         run: |
-          MSG="${STATUS}: penantia-n8n deployed - $(git log -1 --pretty=%h) $(git log -1 --pretty=%s)"
+          MSG="${STATUS}: penantia-n8n - $(git log -1 --pretty=%h) $(git log -1 --pretty=%s)"
           curl -s "https://api.telegram.org/bot${BOT}/sendMessage" --data-urlencode "chat_id=${CHAT}" --data-urlencode "text=${MSG}" --max-time 10 || true
