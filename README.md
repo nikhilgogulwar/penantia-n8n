@@ -1,6 +1,6 @@
 ---
 title: Penantia n8n
-emoji: N
+emoji: ⚙️
 colorFrom: orange
 colorTo: yellow
 sdk: docker
