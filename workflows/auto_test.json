@@ -44,7 +44,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\"message\": \"You are in AUTONOMOUS_TEST_MODE. 1) Read agent_insights last 3 rows. 2) Read agent_logs last 3 rows for failures. 3) Test weakest point using 2+ tools. 4) Write finding to agent_insights detail starting source=synthetic. Known weak: Google Analytics GitHub reads Supabase data. End: NEXT_TEST: [what next].\", \"session_id\": \"auto-test-loop\"}",
+        "jsonBody": "{\"message\": \"You are in AUTONOMOUS_TEST_MODE. 1) Read agent_insights last 3 rows. 2) Read agent_logs last 3 rows for failures. 3) Test weakest point by calling the specific failing tool directly (e.g. GOOGLE_ANALYTICS_RUN_REPORT or GITHUB_GET_REPOSITORY_CONTENT). 4) Write finding to agent_insights detail starting source=synthetic. Known weak: Google Analytics GitHub reads Supabase data. End: NEXT_TEST: [what next].\", \"session_id\": \"auto-test-loop\"}",
         "options": {
           "timeout": 120000
         }
