@@ -1,0 +1,71 @@
+{
+  "name": "1. Auto Test (2min silent)",
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        250,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://penantiaglobal-ai-backend.hf.space/predict/sync",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"message\": \"You are in AUTONOMOUS_TEST_MODE. 1) Read agent_insights last 3 rows. 2) Read agent_logs last 3 rows for failures. 3) Test weakest point using 2+ tools. 4) Write finding to agent_insights detail starting source=synthetic. Known weak: Google Analytics GitHub reads Supabase data. End: NEXT_TEST: [what next].\", \"session_id\": \"auto-test-loop\"}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}
