@@ -1,8 +1,8 @@
 ---
 title: Penantia n8n
 emoji: ⚙️
-colorFrom: orange
-colorTo: yellow
+colorFrom: yellow
+colorTo: green
 sdk: docker
 app_port: 7860
 pinned: false
