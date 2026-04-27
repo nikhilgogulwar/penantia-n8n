@@ -17,23 +17,91 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          set -x
-          echo "Token length: ${#HF_TOKEN}"
           git config user.email "penantiaglobal@gmail.com"
           git config user.name "Penantia AI"
           git remote remove hf 2>/dev/null || true
           git remote add hf https://penantiaglobal:${HF_TOKEN}@huggingface.co/spaces/penantiaglobal/penantia-n8n
-          git remote -v
-          git log --oneline -3
-          git push hf HEAD:main --force 2>&1
-          echo "Push exit code: $?"
+          git push hf HEAD:main --force
 
-      - name: Telegram
+      - name: Wait for n8n to start
+        run: |
+          echo "Waiting for n8n to boot..."
+          for i in $(seq 1 24); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://penantiaglobal-penantia-n8n.hf.space/healthz)
+            if [ "$STATUS" = "200" ]; then
+              echo "n8n is up after ${i} attempts"
+              break
+            fi
+            echo "Attempt $i: status=$STATUS, waiting 10s..."
+            sleep 10
+          done
+
+      - name: Setup owner + import workflows
+        run: |
+          BASE="https://penantiaglobal-penantia-n8n.hf.space"
+          EMAIL="penantiaglobal@gmail.com"
+          PASS="Penantia2026!"
+          COOKIE_JAR=$(mktemp)
+
+          # Setup owner account (idempotent — fails gracefully if exists)
+          curl -s -c "$COOKIE_JAR" -X POST "$BASE/rest/owner/setup" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"$EMAIL\",\"firstName\":\"Penantia\",\"lastName\":\"AI\",\"password\":\"$PASS\"}" \
+            > /dev/null 2>&1 || true
+
+          # Login
+          LOGIN=$(curl -s -c "$COOKIE_JAR" -X POST "$BASE/rest/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"emailOrLdapLoginId\":\"$EMAIL\",\"password\":\"$PASS\"}")
+          echo "Login: $(echo $LOGIN | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("email","failed"))' 2>/dev/null)"
+
+          # Check existing workflows
+          EXISTING=$(curl -s -b "$COOKIE_JAR" "$BASE/rest/workflows" \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d.get("data",[])))' 2>/dev/null || echo "0")
+          echo "Existing workflows: $EXISTING"
+
+          if [ "$EXISTING" = "0" ] || [ "$EXISTING" = "" ]; then
+            echo "Importing workflows..."
+
+            # Import self-heal
+            WF1=$(curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows" \
+              -H "Content-Type: application/json" \
+              -d @workflows/self_heal.json)
+            WF1_ID=$(echo $WF1 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("id","?"))' 2>/dev/null)
+            WF1_VER=$(echo $WF1 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("versionId",""))' 2>/dev/null)
+            echo "Self-Heal created: $WF1_ID"
+
+            # Import daily summary
+            WF2=$(curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows" \
+              -H "Content-Type: application/json" \
+              -d @workflows/daily_summary.json)
+            WF2_ID=$(echo $WF2 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("id","?"))' 2>/dev/null)
+            WF2_VER=$(echo $WF2 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("versionId",""))' 2>/dev/null)
+            echo "Daily Summary created: $WF2_ID"
+
+            # Activate both
+            curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows/$WF1_ID/activate" \
+              -H "Content-Type: application/json" \
+              -d "{\"versionId\":\"$WF1_VER\"}" > /dev/null
+            curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows/$WF2_ID/activate" \
+              -H "Content-Type: application/json" \
+              -d "{\"versionId\":\"$WF2_VER\"}" > /dev/null
+            echo "Both workflows activated"
+          else
+            echo "Workflows already exist — skipping import"
+          fi
+
+      - name: Telegram notification
         if: always()
         env:
           BOT: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
           STATUS: ${{ job.status }}
         run: |
-          MSG="${STATUS}: penantia-n8n - $(git log -1 --pretty=%h) $(git log -1 --pretty=%s)"
-          curl -s "https://api.telegram.org/bot${BOT}/sendMessage" --data-urlencode "chat_id=${CHAT}" --data-urlencode "text=${MSG}" --max-time 10 || true
+          ICON="✅"
+          [ "$STATUS" != "success" ] && ICON="❌"
+          MSG="$ICON Penantia n8n | $(git log -1 --pretty=%h) | $(git log -1 --pretty=%s) | $(TZ='Australia/Sydney' date '+%H:%M AEST')"
+          curl -s "https://api.telegram.org/bot${BOT}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT}" \
+            --data-urlencode "text=${MSG}" \
+            --max-time 10 || true
