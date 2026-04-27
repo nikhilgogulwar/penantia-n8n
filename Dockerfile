@@ -1,6 +1,6 @@
 FROM n8nio/n8n:latest
 
-LABEL version="1.0.1"
+LABEL version="1.0.2"
 LABEL maintainer="penantiaglobal@gmail.com"
 LABEL description="Penantia AI n8n — Self-Heal + Daily Summary automations"
 
@@ -10,7 +10,9 @@ RUN mkdir -p /data/workflows && chown -R node:node /data
 
 COPY --chown=node:node workflows/ /data/workflows/
 COPY --chown=node:node start.sh /home/node/start.sh
-RUN chmod +x /home/node/start.sh
+RUN chmod +x /home/node/start.sh && \
+    which sh || echo "no sh" && \
+    ls /bin/sh /bin/ash /bin/bash 2>/dev/null || true
 
 USER node
 
@@ -26,4 +28,5 @@ ENV N8N_SKIP_WEBHOOK_DEREGISTRATION_SHUTDOWN=true
 
 EXPOSE 7860
 
-CMD ["sh", "/home/node/start.sh"]
+ENTRYPOINT []
+CMD ["/bin/sh", "/home/node/start.sh"]
