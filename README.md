@@ -1,25 +1,37 @@
----
-title: Penantia n8n
-emoji: ⚙️
-colorFrom: red
-colorTo: yellow
-sdk: docker
-pinned: false
-app_port: 7860
----
+# Penantia n8n Workflows
 
-# Penantia AI — n8n Automation
-
-Self-hosted n8n on HuggingFace Space.
+Self-hosted n8n on HuggingFace Space: https://penantiaglobal-penantia-n8n.hf.space
 Login: penantiaglobal@gmail.com / Penantia2026!
 
-## Workflows
-- **Self-Heal 15min** — detects errors, creates draft PRs on GitHub
-- **Daily Summary 8am AEST** — health report via Telegram
+## Active Workflows
 
-## Architecture
-- Backend: https://penantiaglobal-ai-backend.hf.space
-- Notifications: Telegram @PenantiaAlertsBot
+| # | Name | Schedule | Purpose |
+|---|------|----------|---------|
+| 1 | Auto Test | Every 2min | Agent self-directs stress tests |
+| 2 | Self-Heal | Every 15min | Detect errors, create draft PRs |
+| 3 | SEO Intelligence | Every 2hrs | GSC + web research → Keywords Sheet |
+| 4 | Blog Queue Review | Daily 7am AEST | Create briefs for ready keywords |
+| 5 | Daily Summary | Daily 8am AEST | Telegram health + SEO report |
 
-## Deploy
-Push to main → GitHub Actions → HF rebuilds → Telegram notification
+## SEO Architecture
+
+**Philosophy:** Intelligence runs 24/7. Blog writing is gated by approval.
+
+- Every 2hrs: GSC data + web research saved to Keywords Sheet
+- Daily: Briefs created for ready keywords (max 3/day)
+- Weekly: You review briefs and approve which become full posts
+- No spam: Full blogs never written automatically
+
+## Key Document IDs
+
+- Keywords Sheet: `1bOcy0XPQzP0l0UNuTxgc5TFRH6bwzgIE80EvuHmyP6o`
+- Blog & SEO Audit Report: `1NkSBWFn2XRjpteUmu1h3jthK_Et7nOxmqCosPoGVlc8`
+- Blog Draft (Pure Shilajit): `1NPh0wkTJWfI6254RKTfn3Tr7uwAOOG_AT853_1AuUTc`
+
+## Restore After Restart
+
+If n8n Space restarts and workflows are lost, run:
+```
+Ask Claude: "restore n8n workflows for Penantia"
+```
+Claude reads this file and recreates all workflows via API.
