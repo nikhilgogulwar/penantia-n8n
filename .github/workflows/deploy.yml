@@ -25,70 +25,55 @@ jobs:
 
       - name: Wait for n8n to start
         run: |
-          echo "Waiting for n8n to boot..."
-          for i in $(seq 1 24); do
+          echo "Waiting for n8n..."
+          for i in $(seq 1 30); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://penantiaglobal-penantia-n8n.hf.space/healthz)
-            if [ "$STATUS" = "200" ]; then
-              echo "n8n is up after ${i} attempts"
-              break
-            fi
-            echo "Attempt $i: status=$STATUS, waiting 10s..."
+            if [ "$STATUS" = "200" ]; then echo "n8n up after $i attempts"; break; fi
+            echo "Attempt $i: $STATUS — waiting 10s..."
             sleep 10
           done
 
-      - name: Setup owner + import workflows
+      - name: Setup owner and import all workflows
         run: |
           BASE="https://penantiaglobal-penantia-n8n.hf.space"
           EMAIL="penantiaglobal@gmail.com"
           PASS="Penantia2026!"
           COOKIE_JAR=$(mktemp)
 
-          # Setup owner account (idempotent — fails gracefully if exists)
+          # Setup owner (idempotent)
           curl -s -c "$COOKIE_JAR" -X POST "$BASE/rest/owner/setup" \
             -H "Content-Type: application/json" \
             -d "{\"email\":\"$EMAIL\",\"firstName\":\"Penantia\",\"lastName\":\"AI\",\"password\":\"$PASS\"}" \
             > /dev/null 2>&1 || true
 
           # Login
-          LOGIN=$(curl -s -c "$COOKIE_JAR" -X POST "$BASE/rest/login" \
+          curl -s -c "$COOKIE_JAR" -X POST "$BASE/rest/login" \
             -H "Content-Type: application/json" \
-            -d "{\"emailOrLdapLoginId\":\"$EMAIL\",\"password\":\"$PASS\"}")
-          echo "Login: $(echo $LOGIN | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("email","failed"))' 2>/dev/null)"
+            -d "{\"emailOrLdapLoginId\":\"$EMAIL\",\"password\":\"$PASS\"}" > /dev/null
 
-          # Check existing workflows
+          # Check existing
           EXISTING=$(curl -s -b "$COOKIE_JAR" "$BASE/rest/workflows" \
             | python3 -c 'import json,sys; d=json.load(sys.stdin); print(len(d.get("data",[])))' 2>/dev/null || echo "0")
           echo "Existing workflows: $EXISTING"
 
-          if [ "$EXISTING" = "0" ] || [ "$EXISTING" = "" ]; then
-            echo "Importing workflows..."
-
-            # Import self-heal
-            WF1=$(curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows" \
-              -H "Content-Type: application/json" \
-              -d @workflows/self_heal.json)
-            WF1_ID=$(echo $WF1 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("id","?"))' 2>/dev/null)
-            WF1_VER=$(echo $WF1 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("versionId",""))' 2>/dev/null)
-            echo "Self-Heal created: $WF1_ID"
-
-            # Import daily summary
-            WF2=$(curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows" \
-              -H "Content-Type: application/json" \
-              -d @workflows/daily_summary.json)
-            WF2_ID=$(echo $WF2 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("id","?"))' 2>/dev/null)
-            WF2_VER=$(echo $WF2 | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("versionId",""))' 2>/dev/null)
-            echo "Daily Summary created: $WF2_ID"
-
-            # Activate both
-            curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows/$WF1_ID/activate" \
-              -H "Content-Type: application/json" \
-              -d "{\"versionId\":\"$WF1_VER\"}" > /dev/null
-            curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows/$WF2_ID/activate" \
-              -H "Content-Type: application/json" \
-              -d "{\"versionId\":\"$WF2_VER\"}" > /dev/null
-            echo "Both workflows activated"
+          if [ "$EXISTING" = "0" ] || [ -z "$EXISTING" ]; then
+            echo "Importing all 5 workflows..."
+            for WF_FILE in workflows/auto_test.json workflows/self_heal.json workflows/seo_intelligence.json workflows/blog_queue.json workflows/daily_summary.json; do
+              RESP=$(curl -s -b "$COOKIE_JAR" -X POST "$BASE/rest/workflows" \
+                -H "Content-Type: application/json" \
+                -d @$WF_FILE)
+              WF_ID=$(echo $RESP | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("data",{}).get("id","?"))' 2>/dev/null)
+              echo "Created $WF_FILE: $WF_ID"
+              if [ "$WF_ID" != "?" ] && [ -n "$WF_ID" ]; then
+                curl -s -b "$COOKIE_JAR" -X PATCH "$BASE/rest/workflows/$WF_ID" \
+                  -H "Content-Type: application/json" \
+                  -d '{"active":true}' > /dev/null
+                echo "  Activated $WF_ID"
+              fi
+            done
+            echo "All workflows imported and activated"
           else
-            echo "Workflows already exist — skipping import"
+            echo "Workflows exist — skipping import"
           fi
 
       - name: Telegram notification
