@@ -1,9 +1,19 @@
-# Penantia n8n Workflows
+---
+title: Penantia n8n
+emoji: 🤖
+colorFrom: orange
+colorTo: red
+sdk: docker
+pinned: false
+---
 
-Self-hosted n8n on HuggingFace Space: https://penantiaglobal-penantia-n8n.hf.space
+# Penantia AI — n8n Automation
+
+Self-hosted n8n on HuggingFace Space.
+Live: https://penantiaglobal-penantia-n8n.hf.space
 Login: penantiaglobal@gmail.com / Penantia2026!
 
-## Active Workflows
+## Workflows
 
 | # | Name | Schedule | Purpose |
 |---|------|----------|---------|
@@ -27,11 +37,3 @@ Login: penantiaglobal@gmail.com / Penantia2026!
 - Keywords Sheet: `1bOcy0XPQzP0l0UNuTxgc5TFRH6bwzgIE80EvuHmyP6o`
 - Blog & SEO Audit Report: `1NkSBWFn2XRjpteUmu1h3jthK_Et7nOxmqCosPoGVlc8`
 - Blog Draft (Pure Shilajit): `1NPh0wkTJWfI6254RKTfn3Tr7uwAOOG_AT853_1AuUTc`
-
-## Restore After Restart
-
-If n8n Space restarts and workflows are lost, run:
-```
-Ask Claude: "restore n8n workflows for Penantia"
-```
-Claude reads this file and recreates all workflows via API.
