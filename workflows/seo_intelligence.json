@@ -1,0 +1,71 @@
+{
+  "name": "3. SEO Intelligence (2hr)",
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        250,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://penantiaglobal-ai-backend.hf.space/predict/sync",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"message\": \"You are running the Penantia SEO Intelligence cycle. 1) Query GSC sc-domain:penantia.com last 28 days top 20 queries by impressions. Find queries with impressions>5 but CTR<5%. 2) Web search top 3 opportunity keywords for intent and competitor angle. 3) Append findings to Google Sheet ID 1bOcy0XPQzP0l0UNuTxgc5TFRH6bwzgIE80EvuHmyP6o columns: date keyword impressions clicks ctr position search_intent penantia_opportunity ready_for_blog. 4) Write INSIGHT source=seo_intel with strongest opportunity.\", \"session_id\": \"seo-intel-loop\"}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}
