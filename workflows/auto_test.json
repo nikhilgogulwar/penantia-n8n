@@ -44,7 +44,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{\"message\": \"You are in AUTONOMOUS_TEST_MODE. 1) Read agent_insights last 3 rows. 2) Read agent_logs last 3 rows for failures. 3) Test weakest point by calling the specific failing tool directly (e.g. GOOGLE_ANALYTICS_RUN_REPORT or GITHUB_GET_REPOSITORY_CONTENT). 4) Write finding to agent_insights detail starting source=synthetic. Known weak: Google Analytics GitHub reads Supabase data. End: NEXT_TEST: [what next].\", \"session_id\": \"auto-test-loop\"}",
+        "jsonBody": "{\"message\": \"You are in EVOLUTIONARY_TEST_MODE. Steps: 1) query_supabase table=agent_insights select=title,detail limit=1 order_by=created_at order_desc=true to find the last NEXT_TEST directive in the detail field. 2) Execute EXACTLY that next test using search_and_execute with the specific tool mentioned. If no NEXT_TEST found start with: search_and_execute task=get top 5 search queries for sc-domain:penantia.com last 7 days. 3) Evaluate the result - did it work and was correct data returned. 4) write_supabase with insight_type=tool_pattern title=[TOOL]: [pass or fail] detail=Result: [summary]. NEXT_TEST: search_and_execute task=[exact next task]. Rotate through: GSC queries then GSC pages then Gmail fetch then GitHub file read then GA traffic. Never repeat the same test twice in a row.\", \"session_id\": \"auto-test-loop\"}",
         "options": {
           "timeout": 120000
         }
