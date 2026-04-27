@@ -1,0 +1,71 @@
+{
+  "name": "4. Blog Queue Review (daily 7am AEST)",
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        250,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://penantiaglobal-ai-backend.hf.space/predict/sync",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"message\": \"You are running Penantia Blog Queue Review. 1) Read Google Sheet ID 1bOcy0XPQzP0l0UNuTxgc5TFRH6bwzgIE80EvuHmyP6o rows where ready_for_blog=yes without blog_status. 2) For max 3 today create Google Doc brief titled BRIEF:[keyword] with: target keyword intent suggested_title 5 H2 headings internal_links word_count_target. 3) Write INSIGHT blog_queue with count and keywords queued. Do NOT write full blogs.\", \"session_id\": \"blog-queue-review\"}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}
