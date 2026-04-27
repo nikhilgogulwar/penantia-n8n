@@ -1,0 +1,155 @@
+{
+  "name": "Penantia \u2014 Continuous Diagnosis",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "set-query",
+      "name": "Pick Next Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        300
+      ],
+      "parameters": {
+        "jsCode": "\nconst queries = [\n  \"What are my top 5 search queries on penantia.com this week by impressions?\",\n  \"Check my Gmail inbox and summarise the last 3 emails\",\n  \"List any open GitHub issues across my repos\",\n  \"What pages on penantia.com have the highest click-through rate?\",\n  \"Are there any tool failures in my recent agent logs? Summarise them.\"\n];\nconst idx = Math.floor(Date.now() / 1000) % queries.length;\nreturn [{ json: { \n  query: queries[idx], \n  query_index: idx,\n  session_id: \"n8n-diag-\" + Date.now()\n}}];\n"
+      }
+    },
+    {
+      "id": "run-query",
+      "name": "Run Agent Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "url": "https://penantiaglobal-ai-backend.hf.space/predict/sync",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{\"message\": \"{{ $json.query }}\", \"session_id\": \"{{ $json.session_id }}\"}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    },
+    {
+      "id": "notify",
+      "name": "Telegram Result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        740,
+        300
+      ],
+      "parameters": {
+        "url": "https://api.telegram.org/bot8671396088:AAEbr2WcPKPHuyOwknC0O5XaeZjuY66xiAA/sendMessage",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{\"chat_id\": 148289049, \"text\": \"Diag query {{ $(\\\"Pick Next Query\\\").item.json.query_index + 1 }}\\nQ: {{ $(\\\"Pick Next Query\\\").item.json.query }}\\nTools: {{ $json.tools_used }}\\nStatus: {{ $json.status }}\\nReply: {{ $json.reply.substring(0, 200) }}\"}"
+      }
+    },
+    {
+      "id": "wait",
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        300
+      ],
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "loop",
+      "name": "Loop Back",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        300
+      ],
+      "parameters": {
+        "jsCode": "return $input.all();"
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Pick Next Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Next Query": {
+      "main": [
+        [
+          {
+            "node": "Run Agent Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Agent Query": {
+      "main": [
+        [
+          {
+            "node": "Telegram Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Result": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "Pick Next Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all"
+  },
+  "active": false
+}
