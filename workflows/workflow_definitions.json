@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "last_updated": "2026-04-27",
+  "description": "Penantia n8n workflow definitions \u2014 auto-restore after Space restart",
+  "workflows": [
+    {
+      "id": 1,
+      "name": "1. Auto Test (2min silent)",
+      "purpose": "Agent self-directs stress tests, writes source=synthetic to agent_insights",
+      "schedule": "every 2 minutes",
+      "endpoint": "/predict/sync",
+      "session_id": "auto-test-loop",
+      "telegram": false
+    },
+    {
+      "id": 2,
+      "name": "2. Self-Heal (15min silent)",
+      "purpose": "Detect recurring errors, create draft PRs on GitHub",
+      "schedule": "every 15 minutes",
+      "endpoint": "/self-heal/run",
+      "telegram": false
+    },
+    {
+      "id": 3,
+      "name": "3. SEO Intelligence (2hr)",
+      "purpose": "GSC data + web research \u2192 Keywords Sheet. Intelligence only, no blog writing.",
+      "schedule": "every 2 hours",
+      "endpoint": "/predict/sync",
+      "session_id": "seo-intel-loop",
+      "docs": {
+        "keywords_sheet": "1bOcy0XPQzP0l0UNuTxgc5TFRH6bwzgIE80EvuHmyP6o",
+        "blog_audit_doc": "1NkSBWFn2XRjpteUmu1h3jthK_Et7nOxmqCosPoGVlc8"
+      },
+      "telegram": false
+    },
+    {
+      "id": 4,
+      "name": "4. Blog Queue Review (daily 7am AEST)",
+      "purpose": "Review keywords with ready_for_blog=yes, create briefs (max 3/day), NO full blogs",
+      "schedule": "daily 7am AEST (21:00 UTC)",
+      "endpoint": "/predict/sync",
+      "session_id": "blog-queue-review",
+      "telegram": false
+    },
+    {
+      "id": 5,
+      "name": "5. Daily 8am AEST Summary",
+      "purpose": "Summarise SEO intelligence + system health, send Telegram",
+      "schedule": "daily 8am AEST (22:00 UTC)",
+      "endpoint": "/predict/sync",
+      "session_id": "daily-digest",
+      "telegram": true
+    }
+  ],
+  "seo_architecture": {
+    "philosophy": "Intelligence runs continuously. Blog writing is gated by approval.",
+    "intelligence_cadence": "Every 2 hours \u2014 GSC + web research \u2192 Keywords Sheet",
+    "blog_cadence": "Daily brief review \u2014 max 3 briefs queued per day",
+    "approval_required": "Yes \u2014 you review briefs weekly and approve which to expand",
+    "no_spam_rule": "Never write full blogs automatically \u2014 briefs only until approved"
+  }
+}
