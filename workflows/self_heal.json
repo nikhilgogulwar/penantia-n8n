@@ -2,7 +2,7 @@
   "name": "Penantia \u2014 Self-Heal Every 15min",
   "nodes": [
     {
-      "id": "1",
+      "id": "node-schedule",
       "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "2",
+      "id": "node-http",
       "name": "Call Self-Heal",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
@@ -35,11 +35,19 @@
         "method": "POST",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "{}"
+        "jsonBody": "{}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 120000
+        }
       }
     },
     {
-      "id": "3",
+      "id": "node-tg",
       "name": "Notify Telegram",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
@@ -52,7 +60,7 @@
         "method": "POST",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "{\"chat_id\": 148289049, \"text\": \"Self-Heal: {{ $json.status }} | {{ $json.error || \"no error\" }} | heal_id: {{ $json.heal_id }}\"}"
+        "jsonBody": "{\"chat_id\": 148289049, \"text\": \"Self-Heal | status={{ $json.status || $json.error || 'ran' }} | heal={{ $json.heal_id || '?' }}\"}"
       }
     }
   ],
@@ -81,7 +89,9 @@
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
   },
   "active": true
 }
