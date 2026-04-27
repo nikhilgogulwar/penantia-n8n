@@ -1,14 +1,14 @@
 {
-  "name": "Penantia \u2014 Daily 8am Summary",
+  "name": "5. Daily Summary (8am AEST Telegram)",
   "nodes": [
     {
-      "id": "node-schedule",
+      "id": "n1",
       "name": "Schedule",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [
-        250,
-        300
+        0,
+        0
       ],
       "parameters": {
         "rule": {
@@ -22,68 +22,50 @@
       }
     },
     {
-      "id": "node-health",
-      "name": "Get Health",
+      "id": "n2",
+      "name": "Run",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
+      "typeVersion": 4.2,
       "position": [
-        480,
-        200
+        250,
+        0
       ],
       "parameters": {
-        "url": "https://penantiaglobal-ai-backend.hf.space/health",
-        "method": "GET",
-        "options": {
-          "timeout": 30000
-        }
-      }
-    },
-    {
-      "id": "node-status",
-      "name": "Get Status",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        480,
-        400
-      ],
-      "parameters": {
-        "url": "https://penantiaglobal-ai-backend.hf.space/self-heal/status",
-        "method": "GET",
-        "options": {
-          "timeout": 30000
-        }
-      }
-    },
-    {
-      "id": "node-merge",
-      "name": "Merge",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        700,
-        300
-      ],
-      "parameters": {
-        "mode": "combine",
-        "combinationMode": "multiplex"
-      }
-    },
-    {
-      "id": "node-tg",
-      "name": "Send Summary",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        930,
-        300
-      ],
-      "parameters": {
-        "url": "https://api.telegram.org/bot8671396088:AAEbr2WcPKPHuyOwknC0O5XaeZjuY66xiAA/sendMessage",
         "method": "POST",
+        "url": "https://penantiaglobal-ai-backend.hf.space/predict/sync",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
-        "contentType": "json",
-        "jsonBody": "{\"chat_id\": 148289049, \"text\": \"Penantia Daily\\nVersion: {{ $('Get Health').item.json.version || '?' }}\\nMemory: {{ $('Get Health').item.json.memory_ready || '?' }}\\nHeals: {{ $('Get Status').item.json.recent_heals ? $('Get Status').item.json.recent_heals.length : 0 }}\"}"
+        "specifyBody": "json",
+        "jsonBody": "{\"message\": \"Summarise Penantia SEO intelligence: 1) Query agent_insights last 24hrs for seo and blog types. 2) Count intelligence cycles ran opportunities found briefs created. 3) Query agent_logs for any errors today. Report summary.\", \"session_id\": \"daily-digest\"}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    },
+    {
+      "id": "n3",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8671396088:AAEbr2WcPKPHuyOwknC0O5XaeZjuY66xiAA/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"chat_id\": 148289049, \"text\": \"\\ud83d\\udcca Penantia AI Daily 8am AEST\\nSEO + system summary complete. Check agent_insights.\"}",
+        "options": {}
       }
     }
   ],
@@ -92,45 +74,18 @@
       "main": [
         [
           {
-            "node": "Get Health",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Get Status",
+            "node": "Run",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Health": {
+    "Run": {
       "main": [
         [
           {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Status": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Send Summary",
+            "node": "Telegram",
             "type": "main",
             "index": 0
           }
